@@ -115,7 +115,7 @@ add_filter( 'rest_dispatch_request', function( $result, $request, $route, $handl
 		}
 	};
 
-	return $content;
+	return $result;
 }, 10, 4);
 
 //logger and reporting
