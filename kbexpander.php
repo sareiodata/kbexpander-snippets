@@ -70,13 +70,24 @@ add_action( 'init', function(){
 
 // Add unrendered content to the rest api
 add_action( 'rest_api_init', function () {
-	$args = array('get_callback' => 'kbx_get_unrendered_content');
 	register_rest_field( 'kb', 'content-unrendered', array(
 		'get_callback' => function ($kb_arr){
 			$kb_obj = get_post($kb_arr['id']);
 			return $kb_obj->post_content;
 		}
 	));
+
+	register_rest_field( 'kb', 'content-categories', array(
+        'get_callback' => function ($kb_arr){
+            $categories = get_the_terms($kb_arr['id'], 'kbcategory');
+            $content = '';
+            foreach( $categories as $category) {
+                $content .= $category->name . ' | ';
+            }
+            return $content;
+        }
+    ));
+
 });
 
 // Disable wyswyg for custom post type, using get_post_type() function
