@@ -81,6 +81,9 @@ add_action( 'rest_api_init', function () {
         'get_callback' => function ($kb_arr){
             $categories = get_the_terms($kb_arr['id'], 'kbcategory');
             $content = '';
+            if($categories === false){
+                return $content;
+            }
             foreach( $categories as $category) {
                 $content .= $category->name . ' | ';
             }
