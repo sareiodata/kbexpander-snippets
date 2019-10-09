@@ -108,29 +108,72 @@ add_action('admin_head', function (){
   		echo '<style>.quicktags-toolbar{display:none;}</style>';
     }
 });
-// track access to posts
 
+// track access to posts
 add_filter( 'rest_dispatch_request', function( $result, $request, $route, $handler ){
 	//header("Content-Type: text/html");
 	//var_dump($route);
 
 	if( $route == '/wp/v2/kb/(?P<id>[\d]+)' ){
-
 		$kb_id = end(explode('/', $_SERVER['REQUEST_URI']));
-		//var_dump($kb_id);
 		if (is_numeric($kb_id)){
-			//$count = get_post_meta( $kb_id, 'kb_counter', true );
-			if ( ! $count ) {
-			    $count = 0;  // if the meta value isn't set, use 0 as a default
-			}
-			$count++;
-			//update_post_meta( $kb_id, 'kb_counter', $count );
+            require_once('class_logger.php');
+            $logger = New KBX_Logger();
 
+            $terms = get_the_terms( $kb_id, 'kbcategory' );
+            if ( !empty( $terms ) ){
+                $term_slugs = implode(',', wp_list_pluck($terms, 'slug'));
+            } else {
+                $term_slugs = '';
+            }
+
+            $user = wp_get_current_user();
+            $user_id = $user->ID;
+            if ($user_id != 0){
+                $user_name = $user->display_name;
+            } else {
+                $user_name = 'NotLoggedIn';
+            }
+
+            $args = array(
+                'type'          => 'single',
+                'kb_id'         => $kb_id,
+                'kb_title'      => get_the_title($kb_id),
+                'kb_categories' => $term_slugs,
+                'user_id'       => $user_id,
+                'user_name'     => $user_name
+            );
+            $logger->log($args);
 		}
-	};
+	}
+
+	if($route == '/wp/v2/kb'){
+        require_once('class_logger.php');
+        $logger = New KBX_Logger();
+
+        $user = wp_get_current_user();
+        $user_id = $user->ID;
+        if ($user_id != 0){
+            $user_name = $user->display_name;
+        } else {
+            $user_name = 'NotLoggedIn';
+        }
+
+        $args = array(
+            'type'          => 'archive',
+            'kb_id'         => 0,
+            'kb_title'      => '',
+            'kb_categories' => '',
+            'user_id'       => $user_id,
+            'user_name'     => $user_name
+        );
+        $logger->log($args);
+    };
 
 	return $result;
 }, 10, 4);
+
+
 
 //logger and reporting
 /*
@@ -141,17 +184,19 @@ each all kbs-endpoint is also tracked individually => allbks / time / user
 
 id
 type: single / archive
-kb_id (only for single - 0 for archive)
+kb_id (only for single - empty for archive)
+kb_title (only for single - empty for archive)
 user_id
+user_name
 timestamp
-number_of_key_presses
-number_of_key_presses_saved (ca be negative)
+//number_of_key_presses
+//number_of_key_presses_saved (ca be negative)
 
 Reporting: 
 * per day / month 
-* list archive accesses(total/per user) -> graph with acceses / day / month; per user-> multiple graphs with the user
-* most accesed kbs / period-> table
-* most accesed kbs / user / period -> table
+* list archive accesses(total/per user) -> graph with access / day / month; per user-> multiple graphs with the user
+* most accessed kbs / period-> table
+* most accessed kbs / user / period -> table
 
 
 
