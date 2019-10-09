@@ -73,7 +73,7 @@ add_action( 'rest_api_init', function () {
 	register_rest_field( 'kb', 'content-unrendered', array(
 		'get_callback' => function ($kb_arr){
 			$kb_obj = get_post($kb_arr['id']);
-			return $kb_obj->post_content;
+			return htmlspecialchars_decode($kb_obj->post_content);
 		}
 	));
 
@@ -85,7 +85,7 @@ add_action( 'rest_api_init', function () {
                 return $content;
             }
             foreach( $categories as $category) {
-                $content .= $category->name . ' | ';
+                $content .= "#" . $category->name . ' ';
             }
             return $content;
         }
