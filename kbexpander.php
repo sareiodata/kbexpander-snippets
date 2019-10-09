@@ -24,7 +24,7 @@ add_action( 'init', function(){
 		'description'           => __( 'Kbexpander Snippets', 'kbexpander' ),
 		'supports'              => array( 'title', 'editor', 'revisions'),
 		'hierarchical'          => true,
-		'public'                => false,
+		'public'                => true,
 		'show_ui'               => true,
 		'show_in_menu'          => true,
 		'menu_position'         => 100,
@@ -116,71 +116,112 @@ add_action('admin_head', function (){
     }
 });
 
-// track access to posts
-add_filter( 'rest_dispatch_request', function( $result, $request, $route, $handler ){
-	//header("Content-Type: text/html");
-	//var_dump($route);
+// Logger and Cache
+// prevent infinite loop.
+global $kb_self_refresh_caching;
+$kb_self_refresh_caching = null;
+add_filter('rest_pre_dispatch', function( $result, $server, $request ){
+    //header("Content-Type: text/html");
+    global $kb_self_refresh_caching;
+    if ( true == $kb_self_refresh_caching ) {
+        return $result;
+    }
 
-	if( $route == '/wp/v2/kb/(?P<id>[\d]+)' ){
-		$kb_id = end(explode('/', $_SERVER['REQUEST_URI']));
-		if (is_numeric($kb_id)){
+    $path   = $request->get_route();
+
+    if( strpos($path, '/wp/v2/kb/') !== false ){
+        $kb_id = end(explode('/', $path));
+        if (is_numeric($kb_id)){
             require_once('class_logger.php');
             $logger = New KBX_Logger();
-
-            $terms = get_the_terms( $kb_id, 'kbcategory' );
-            if ( !empty( $terms ) ){
-                $term_slugs = implode(',', wp_list_pluck($terms, 'slug'));
-            } else {
-                $term_slugs = '';
-            }
-
-            $user = wp_get_current_user();
-            $user_id = $user->ID;
-            if ($user_id != 0){
-                $user_name = $user->display_name;
-            } else {
-                $user_name = 'NotLoggedIn';
-            }
-
+            $user = kb_get_user();
             $args = array(
                 'type'          => 'single',
                 'kb_id'         => $kb_id,
                 'kb_title'      => get_the_title($kb_id),
-                'kb_categories' => $term_slugs,
-                'user_id'       => $user_id,
-                'user_name'     => $user_name
+                'kb_categories' => kb_get_term_slugs($kb_id),
+                'user_id'       => $user['id'],
+                'user_name'     => $user['username']
             );
             $logger->log($args);
-		}
-	}
 
-	if($route == '/wp/v2/kb'){
+            $key = 'kb_rest_cache_'. $path;
+            if ( false === ( $result = get_transient( $key ) ) ) {
+                if ( is_null( $kb_self_refresh_caching ) ) {
+                    $kb_self_refresh_caching = true;
+                }
+                $result  = $server->dispatch( $request );
+                set_transient( $key, $result, 48 * HOUR_IN_SECONDS );
+            }
+        }
+    }
+
+    if($path == '/wp/v2/kb'){
         require_once('class_logger.php');
         $logger = New KBX_Logger();
-
-        $user = wp_get_current_user();
-        $user_id = $user->ID;
-        if ($user_id != 0){
-            $user_name = $user->display_name;
-        } else {
-            $user_name = 'NotLoggedIn';
-        }
-
+        $user = kb_get_user();
         $args = array(
             'type'          => 'archive',
             'kb_id'         => 0,
             'kb_title'      => '',
             'kb_categories' => '',
-            'user_id'       => $user_id,
-            'user_name'     => $user_name
+            'user_id'       => $user['id'],
+            'user_name'     => $user['username']
         );
         $logger->log($args);
+
+        $key = 'kb_rest_cache_'. $path;
+        if ( false === ( $result = get_transient( $key ) ) ) {
+            if ( is_null( $kb_self_refresh_caching ) ) {
+                $kb_self_refresh_caching = true;
+            }
+            $result  = $server->dispatch( $request );
+            set_transient( $key, $result, 48 * HOUR_IN_SECONDS );
+        }
     };
 
-	return $result;
-}, 10, 4);
+    return $result;
+}, 10, 3);
 
+add_action('save_post', function($post_id){
 
+    if(get_post_type($post_id) == 'kb'){
+        global $wpdb;
+        return $wpdb->query( $wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_kb_rest_cache_%'
+        ) );
+    }
+});
+
+function kb_get_user(){
+    if(isset($_GET['username'])){
+        $user = get_user_by( 'login', $_GET['username'] );
+    } else {
+        $user = false;
+    }
+
+    if ( $user ){
+        $user_id = $user->ID;
+        $user_name = $user->user_login;
+    } else {
+        $user_id = 0;
+        $user_name = 'NoUserDefined';
+    }
+
+    return array('id' => $user_id, 'username' => $user_name);
+}
+
+function kb_get_term_slugs($kb_id){
+    $terms = get_the_terms( $kb_id, 'kbcategory' );
+    if ( !empty( $terms ) ){
+        $term_slugs = implode(',', wp_list_pluck($terms, 'slug'));
+    } else {
+        $term_slugs = '';
+    }
+
+    return $term_slugs;
+}
 
 //logger and reporting
 /*
@@ -204,14 +245,3 @@ Reporting:
 * list archive accesses(total/per user) -> graph with access / day / month; per user-> multiple graphs with the user
 * most accessed kbs / period-> table
 * most accessed kbs / user / period -> table
-
-
-
-// add_filter( 'rest_pre_dispatch', function( $result,  $server, $request ){
-// 	if( $route == '/wp/v2/kb/(?P<id>[\d]+)' ){
-// 		// do stuff.
-// 	};
-// 	var_dump($request);
-// 	die();
-// 	return $content;
-// }, 10, 4);
