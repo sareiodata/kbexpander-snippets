@@ -93,6 +93,13 @@ add_action( 'rest_api_init', function () {
 
 });
 
+// List all posts in rest api
+add_filter( 'rest_kb_query', function($args, $request){
+    $max = max( (int) $request->get_param( 'custom_per_page' ), 1000 );
+    $args['posts_per_page'] = $max;
+    return $args;
+}, 10, 2 );
+
 // Disable wyswyg for custom post type, using get_post_type() function
 add_filter('user_can_richedit', function( $default ){
   if( get_post_type() === 'kb')  return false;
