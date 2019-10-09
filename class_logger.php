@@ -21,14 +21,13 @@ class KBX_Logger {
         // expected structure.
         $log = array(
             'type'          => $args['type'],
-            'kb_id'         => $args['bk_id'],
+            'kb_id'         => $args['kb_id'],
             'kb_title'      => $args['kb_title'],
             'kb_categories' => $args['kb_categories'],
             'user_id'       => $args['user_id'],
             'user_name'     => $args['user_name'],
             'timestamp'     => date ("Y-m-d H:i:s" )
         );
-
         $table_name = $wpdb->prefix . 'kbx_logs';
 
         $query = "INSERT INTO `$table_name` ( `type`, `kb_id`, `kb_title`, `kb_categories`, `user_id`, `user_name`, `timestamp` ) VALUES (%s, %s, %s, %s, %s, %s, %s)";
