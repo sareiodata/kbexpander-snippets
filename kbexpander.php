@@ -68,6 +68,10 @@ add_action( 'init', function(){
 
 }, 0 );
 
+// Register Reports Page
+include_once('reports/class-reports.php');
+$kbx_reports = new kbx\Admin;
+
 // Add unrendered content to the rest api
 add_action( 'rest_api_init', function () {
 	register_rest_field( 'kb', 'content-unrendered', array(
