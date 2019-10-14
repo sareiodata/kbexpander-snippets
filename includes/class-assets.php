@@ -66,20 +66,20 @@ class Assets {
         $prefix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '.min' : '';
 
         $scripts = [
-            'baseplugin-vendor' => [
+            'kbx-vendor' => [
                 'src'       => KBX_ASSETS . '/js/vendor.js',
                 'version'   => filemtime( KBX_PATH . '/assets/js/vendor.js' ),
                 'in_footer' => true
             ],
-            'baseplugin-frontend' => [
+            'kbx-frontend' => [
                 'src'       => KBX_ASSETS . '/js/frontend.js',
-                'deps'      => [ 'jquery', 'baseplugin-vendor' ],
+                'deps'      => [ 'jquery', 'kbx-vendor' ],
                 'version'   => filemtime( KBX_PATH . '/assets/js/frontend.js' ),
                 'in_footer' => true
             ],
-            'baseplugin-admin' => [
+            'kbx-admin' => [
                 'src'       => KBX_ASSETS . '/js/admin.js',
-                'deps'      => [ 'jquery', 'baseplugin-vendor' ],
+                'deps'      => [ 'jquery', 'kbx-vendor' ],
                 'version'   => filemtime( KBX_PATH . '/assets/js/admin.js' ),
                 'in_footer' => true
             ]
@@ -96,13 +96,13 @@ class Assets {
     public function get_styles() {
 
         $styles = [
-            'baseplugin-style' => [
+            'kbx-style' => [
                 'src' =>  KBX_ASSETS . '/css/style.css'
             ],
-            'baseplugin-frontend' => [
+            'kbx-frontend' => [
                 'src' =>  KBX_ASSETS . '/css/frontend.css'
             ],
-            'baseplugin-admin' => [
+            'kbx-admin' => [
                 'src' =>  KBX_ASSETS . '/css/admin.css'
             ],
         ];
