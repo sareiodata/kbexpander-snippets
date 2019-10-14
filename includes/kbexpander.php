@@ -1,17 +1,4 @@
 <?php
-/**
- *
- * Plugin Name:       Kbexpander
- * Plugin URI:        https://www.cozmoslabs.com
- * Description:       Companion plugin for Kbexpander text expander tool for Linux
- * Version:           1.0.0
- * Author:            Cristian Antohe
- * Author URI:        https://www.cozmoslabs.com
- * License:           GPL-2.0+
- * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain:       kbexpander
- */
-
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -68,10 +55,6 @@ add_action( 'init', function(){
 
 }, 0 );
 
-// Register Reports Page
-include_once('reports/class-reports.php');
-$kbx_reports = new kbx\Admin;
-
 // Add unrendered content to the rest api
 add_action( 'rest_api_init', function () {
 	register_rest_field( 'kb', 'content-unrendered', array(
@@ -113,10 +96,12 @@ add_filter('user_can_richedit', function( $default ){
 // Hide media buttons and quicktags 
 add_action('admin_head', function (){
     global $post;
-    if($post->post_type == 'kb' && current_user_can('edit_post') )
+    if( ($post->post_type == 'kb' && current_user_can('edit_post') ) ||
+        ( isset($_GET['post_type']) && $_GET['post_type'] == 'kb' )
+    )
     {
         remove_action( 'media_buttons', 'media_buttons' );
-  		echo '<style>.quicktags-toolbar{display:none;}</style>';
+  		echo '<style>.quicktags-toolbar, .notice, .wppb-serial-notification{display:none;}</style>';
     }
 });
 
@@ -226,26 +211,3 @@ function kb_get_term_slugs($kb_id){
 
     return $term_slugs;
 }
-
-//logger and reporting
-/*
-Logging:
-
-each singular endpoint is tracked individually. => kb / time / user
-each all kbs-endpoint is also tracked individually => allbks / time / user
-
-id
-type: single / archive
-kb_id (only for single - empty for archive)
-kb_title (only for single - empty for archive)
-user_id
-user_name
-timestamp
-//number_of_key_presses
-//number_of_key_presses_saved (ca be negative)
-
-Reporting: 
-* per day / month 
-* list archive accesses(total/per user) -> graph with access / day / month; per user-> multiple graphs with the user
-* most accessed kbs / period-> table
-* most accessed kbs / user / period -> table
