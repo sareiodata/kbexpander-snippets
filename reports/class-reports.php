@@ -1,6 +1,6 @@
 <?php
 namespace kbx;
-
+use Symfony\Component\HttpFoundation\Request;
 /**
  * Admin Pages Handler
  */
@@ -58,6 +58,37 @@ class Admin {
      * @return void
      */
     public function plugin_page() {
-        echo '<div class="wrap"><h1>Reports</h1></div>';
+        $request = Request::createFromGlobals();
+        $page = $request->get('another', 'somedefault');
+
+?>
+<div class="wrap">
+    <h1>Reports</h1>
+    <canvas id="myChart" width="4" height="1"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js" integrity="sha256-xKeoJ50pzbUGkpQxDYHD7o7hxe0LaOGeguUidbq6vis=" crossorigin="anonymous"></script>
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'line',
+
+        // The data for our dataset
+        data: {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            datasets: [{
+                label: 'My First dataset',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(155, 99, 132)',
+                data: [0, 10, 5, 2, 20, 30, 45]
+            }]
+        },
+
+        // Configuration options go here
+        options: {}
+    });
+</script>
+        <?php
     }
 }

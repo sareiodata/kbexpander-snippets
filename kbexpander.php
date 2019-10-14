@@ -17,6 +17,8 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+require_once __DIR__.'/vendor/autoload.php';
+
 // Register Custom Post Type and Taxonomy
 add_action( 'init', function(){
 	$args = array(
