@@ -58,6 +58,6 @@ class Admin {
      * @return void
      */
     public function plugin_page() {
-        echo '<div class="wrap"><div id="vue-admin-app"></div></div>';
+        echo '<div class="wrap"><h1>Reports</h1></div>';
     }
 }

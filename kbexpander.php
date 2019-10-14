@@ -1,7 +1,7 @@
 <?php
 /**
  *
- * Plugin Name:       Kbexpander
+ * Plugin Name:       Kbexpander Snippets
  * Plugin URI:        https://www.cozmoslabs.com
  * Description:       Companion plugin for Kbexpander text expander tool for Linux
  * Version:           1.0.0
@@ -113,10 +113,12 @@ add_filter('user_can_richedit', function( $default ){
 // Hide media buttons and quicktags 
 add_action('admin_head', function (){
     global $post;
-    if($post->post_type == 'kb' && current_user_can('edit_post') )
+    if( ($post->post_type == 'kb' && current_user_can('edit_post')) ||
+        (isset($_GET['post_type']) && $_GET['post_type'] == 'kb')
+    )
     {
         remove_action( 'media_buttons', 'media_buttons' );
-  		echo '<style>.quicktags-toolbar{display:none;}</style>';
+  		echo '<style>.quicktags-toolbar, .notice, .wppb-serial-notification{display:none;}</style>';
     }
 });
 
