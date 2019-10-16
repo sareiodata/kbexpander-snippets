@@ -1,6 +1,5 @@
 <?php
 namespace kbx;
-use stdClass;
 use Symfony\Component\HttpFoundation\Request;
 /**
  * Admin Pages Handler
@@ -125,12 +124,10 @@ class Admin {
 
         jQuery('#kb-form-filter').submit(function(event){
             event.preventDefault();
-            //let values = {};
             let url = document.location.href;
             url = url.slice( 0, url.indexOf('&page=kbx-charts') );
             url += '&page=kbx-charts';
             jQuery.each(jQuery(this).serializeArray(), function(i, field) {
-                //values[field.name] = field.value;
                 if ( field.value != '' ){
                     url += "&"+field.name+"="+field.value;
                 }
@@ -194,11 +191,11 @@ class Admin {
     public function plugin_page_tables() {
         $request = Request::createFromGlobals();
         $user = $request->get('user', '');
-        $term_slug = $request->get('term_slug', '');
+        $kbcategory = $request->get('kbcategory', '');
         $start = $request->get('start', '');
         $end = $request->get('end', '');
 
-        //$table_data = $this->getTableData($user, $term_slug, $start, $end);
+        $table_data = $this->getTableData($user, $kbcategory, $start, $end);
 
 
         ?>
@@ -231,27 +228,27 @@ class Admin {
 
             <table class="wp-list-table widefat fixed striped pages">
                 <tr>
-                    <th width="80">
+                    <th width="80" align="center">
                         kb id
                     </th>
+                    <th width="80" align="center">
+                        Counter
+                    </th>
                     <th>
-                        Title
+                        Title / Edit
                     </th>
-                    <th width="100">
-                        Edit
-                    </th>
-                    <th width="100">
+                    <th width="100" align="center">
                         Chart over time
                     </th>
                 </tr>
-                <?php while( 0 == 1 ) : ?>
+                <?php foreach( $table_data as $key => $kb ) : ?>
                 <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td align="center"><?php echo $kb['kb_id'] ?></td>
+                    <td align="center"><?php echo $kb['counter'] ?></td>
+                    <td><a href="<?php echo  trailingslashit(home_url()) . "wp-admin/post.php?post={$kb['kb_id']}&action=edit"?>"><?php echo $kb['kb_title'] ?></a></td>
+                    <td align="center"><a href="<?php echo trailingslashit(home_url()) . "wp-admin/edit.php?post_type=kb&page=kbx-charts&kb={$kb['kb_id']}"?>">View</a></td>
                 </tr>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             </table>
 
@@ -267,12 +264,10 @@ class Admin {
 
                 jQuery('#kb-form-filter').submit(function(event){
                     event.preventDefault();
-                    //let values = {};
                     let url = document.location.href;
                     url = url.slice( 0, url.indexOf('&page=kbx-tables') );
                     url += '&page=kbx-tables';
                     jQuery.each(jQuery(this).serializeArray(), function(i, field) {
-                        //values[field.name] = field.value;
                         if ( field.value != '' ){
                             url += "&"+field.name+"="+field.value;
                         }
@@ -290,6 +285,12 @@ class Admin {
                 width: 250px;
                 border-radius: 5px;
                 border-color: rgb(170, 170, 170)
+            }
+            .wp-list-table tr th{
+                text-align: center;
+            }
+            .wp-list-table tr:hover td{
+                background: #d4d4d4;
             }
         </style>
         <?php
@@ -364,6 +365,7 @@ class Admin {
             'hide_empty'      => true,
             'echo'            => 0,
             'value_field'     => 'slug',
+            'option_none_value'=> '0'
         ));
     }
 
@@ -420,5 +422,61 @@ class Admin {
         }
 
         return [$labels, array_values($labels_data)];
+    }
+
+    private function getTableData($user = '', $kbcategory = '', $start = '', $end = '')
+    {
+        global $wpdb;
+
+        $between_date = $wpdb->prepare(" (`timestamp` BETWEEN %s AND %s ) ", array($start." 00:00:00", $end . " 23:59:59"));
+        if (empty($start) || empty($end) ){
+            $start = date('Y-m-d', strtotime('-30 days'));
+            $end = date('Y-m-d', time());
+            $between_date = $wpdb->prepare(" (`timestamp` BETWEEN %s AND %s )", array($start." 00:00:00", $end . " 23:59:59"));
+        }
+
+        $where_user = '';
+        if(!empty($user)){
+            $where_user = $wpdb->prepare(" (`user_name` LIKE %s) ", $user);
+        }
+
+        $where_kbcategory = '';
+        if(!empty($kbcategory)){
+            $where_kbcategory = $wpdb->prepare(" (`kb_categories` LIKE '%%%s%%') ", $kbcategory);
+        }
+
+        $table_name = $wpdb->prefix . 'kbx_logs';
+        $query = "SELECT `kb_id`, `kb_title`, `kb_categories`, COUNT(*) as counter FROM $table_name WHERE (`type` LIKE 'single') AND " . $between_date;
+
+        if (!empty($where_user)){
+            $query .= " AND " . $where_user;
+        }
+
+        if (!empty($where_kbcategory)){
+            $query .= " AND " . $where_kbcategory;
+        }
+
+        $query .= ' GROUP BY `kb_id` ORDER BY `counter` DESC';
+
+        //var_dump($query);
+
+        $result = $wpdb->get_results( $query, OBJECT_K  );
+
+        //var_dump($result);
+
+        if ( $wpdb->last_error !== '' )
+            return false;
+
+        $tableData = [];
+
+        foreach($result as $key => $log){
+            $tableData[] = [
+                'kb_id'     => $log->kb_id,
+                'counter'   => $log->counter,
+                'kb_title'     => $log->kb_title,
+            ];
+        }
+
+        return $tableData;
     }
 }
