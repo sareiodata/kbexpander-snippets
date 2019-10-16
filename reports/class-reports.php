@@ -389,7 +389,7 @@ class Admin {
         }
 
         $table_name = $wpdb->prefix . 'kbx_logs';
-        $query = "SELECT * from $table_name WHERE" . $between_date;
+        $query = "SELECT * from $table_name WHERE (`type` LIKE 'single') AND " . $between_date;
 
         if (!empty($where_user)){
             $query .= " AND " . $where_user;
