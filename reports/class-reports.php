@@ -1,5 +1,6 @@
 <?php
 namespace kbx;
+use stdClass;
 use Symfony\Component\HttpFoundation\Request;
 /**
  * Admin Pages Handler
@@ -193,27 +194,27 @@ class Admin {
     public function plugin_page_tables() {
         $request = Request::createFromGlobals();
         $user = $request->get('user', '');
-        $kb = $request->get('kb', '');
+        $term_slug = $request->get('term_slug', '');
         $start = $request->get('start', '');
         $end = $request->get('end', '');
 
+        //$table_data = $this->getTableData($user, $term_slug, $start, $end);
+
+
         ?>
         <div class="wrap">
-            <h1>Report Charts</h1>
+            <h1>Report Tables</h1>
             <form id="kb-form-filter" action="">
                 <table class="kb-filter">
                     <tr>
                         <td>
                             <select name="user">
-                                <option value="">Choose a user...</option>
+                                <option value="">User...</option>
                                 <?php echo $this->getUsers($user); ?>
                             </select>
                         </td>
                         <td>
-                            <select name="kb">
-                                <option value="">Choose a KB...</option>
-                                <?php echo $this->getKbs($kb); ?>
-                            </select>
+                            <?php echo $this->getKbTerms(); ?>
                         </td>
                         <td>
                             <label>Start: <input type="date" name="start" value="<?php echo $start; ?>"></label>
@@ -228,8 +229,35 @@ class Admin {
                 </table>
             </form>
 
-            <canvas id="myChart" width="4" height="1"></canvas>
+            <table class="wp-list-table widefat fixed striped pages">
+                <tr>
+                    <th width="80">
+                        kb id
+                    </th>
+                    <th>
+                        Title
+                    </th>
+                    <th width="100">
+                        Edit
+                    </th>
+                    <th width="100">
+                        Chart over time
+                    </th>
+                </tr>
+                <?php while( 0 == 1 ) : ?>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <?php endwhile; ?>
+
+            </table>
+
         </div>
+
+
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" integrity="sha256-FdatTf20PQr/rWg+cAKfl6j4/IY3oohFAJ7gVC3M34E=" crossorigin="anonymous" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/js/select2.min.js" integrity="sha256-d/edyIFneUo3SvmaFnf96hRcVBcyaOy96iMkPez1kaU=" crossorigin="anonymous"></script>
@@ -276,6 +304,9 @@ class Admin {
             'order'   => 'ASC'
         );
         $users = get_users( $args );
+        $nouser_obj = (object)['user_login' => 'NoUserDefined'];
+        $users[] = $nouser_obj;
+
         $content = '';
         foreach ( $users as $user ) {
             $username = esc_attr($user->user_login);
@@ -315,6 +346,25 @@ class Admin {
             }
         }
         return $content;
+    }
+
+    private function getKbTerms()
+    {
+        $taxonomy  = 'kbcategory'; // change to your taxonomy
+
+        $selected      = isset($_GET[$taxonomy]) ? $_GET[$taxonomy] : '';
+        $info_taxonomy = get_taxonomy($taxonomy);
+        return wp_dropdown_categories(array(
+            'show_option_all' => sprintf( __( 'Show all %s', 'textdomain' ), $info_taxonomy->label ),
+            'taxonomy'        => $taxonomy,
+            'name'            => $taxonomy,
+            'orderby'         => 'name',
+            'selected'        => $selected,
+            'show_count'      => true,
+            'hide_empty'      => true,
+            'echo'            => 0,
+            'value_field'     => 'slug',
+        ));
     }
 
     private function getChartData($user = '', $kb = '', $start = '', $end = '')
