@@ -99,6 +99,7 @@ add_action( 'rest_api_init', function () {
 
 });
 
+
 // List all posts in rest api
 add_filter( 'rest_kb_query', function($args, $request){
     $max = max( (int) $request->get_param( 'custom_per_page' ), 1000 );
@@ -106,23 +107,13 @@ add_filter( 'rest_kb_query', function($args, $request){
     return $args;
 }, 10, 2 );
 
-// Disable wyswyg for custom post type, using get_post_type() function
-add_filter('user_can_richedit', function( $default ){
-  if( get_post_type() === 'kb')  return false;
-  return $default;
-});
-
-// Hide media buttons and quicktags 
-add_action('admin_head', function (){
-    global $post;
-    if( ($post->post_type == 'kb' && current_user_can('edit_post')) ||
-        (isset($_GET['post_type']) && $_GET['post_type'] == 'kb')
-    )
-    {
-        remove_action( 'media_buttons', 'media_buttons' );
-  		echo '<style>.quicktags-toolbar, .notice, .wppb-serial-notification{display:none;}</style>';
-    }
-});
+// Disable Block Editor for this Custom Post Type
+add_filter('use_block_editor_for_post_type', function($current_status, $post_type){
+    if ( $post_type === 'kb' ) 
+        return false;
+    
+    return $current_status;
+}, 10, 2);
 
 // Logger and Cache
 // prevent infinite loop.
@@ -135,7 +126,7 @@ add_filter('rest_pre_dispatch', function( $result, $server, $request ){
         return $result;
     }
 
-    $path   = $request->get_route();
+    $path = $request->get_route();
 
     if( strpos($path, '/wp/v2/kb/') !== false ){
         $kb_id = end(explode('/', $path));
@@ -164,7 +155,7 @@ add_filter('rest_pre_dispatch', function( $result, $server, $request ){
         }
     }
 
-    if($path == '/wp/v2/kb'){
+    if( $path == '/wp/v2/kb' ){
         require_once('class_logger.php');
         $logger = New KBX_Logger();
         $user = kb_get_user();
@@ -273,24 +264,24 @@ function tsm_convert_id_to_term_in_query($query) {
 }
 
 //logger and reporting
-/*
-Logging:
 
-each singular endpoint is tracked individually. => kb / time / user
-each all kbs-endpoint is also tracked individually => allbks / time / user
+// Logging:
 
-id
-type: single / archive
-kb_id (only for single - empty for archive)
-kb_title (only for single - empty for archive)
-user_id
-user_name
-timestamp
-//number_of_key_presses
-//number_of_key_presses_saved (ca be negative)
+// each singular endpoint is tracked individually. => kb / time / user
+// each all kbs-endpoint is also tracked individually => allbks / time / user
 
-Reporting: 
-* per day / month 
-* list archive accesses(total/per user) -> graph with access / day / month; per user-> multiple graphs with the user
-* most accessed kbs / period-> table
-* most accessed kbs / user / period -> table
+// id
+// type: single / archive
+// kb_id (only for single - empty for archive)
+// kb_title (only for single - empty for archive)
+// user_id
+// user_name
+// timestamp
+// //number_of_key_presses
+// //number_of_key_presses_saved (ca be negative)
+
+// Reporting:
+// * per day / month
+// * list archive accesses(total/per user) -> graph with access / day / month; per user-> multiple graphs with the user
+// * most accessed kbs / period-> table
+// * most accessed kbs / user / period -> table
